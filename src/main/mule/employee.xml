@@ -30,7 +30,11 @@ payload]]></ee:set-payload>
 		</ee:transform>
 	</flow>
 	<flow name="employeeSelectFlow" doc:id="d4f69390-16cb-4448-ade8-3da32f43bc8a" >
-		<http:listener doc:name="Listener" doc:id="d94dfc48-c881-4e40-93b1-d561be22c4fc" config-ref="HTTP_Listener_config" path="/employee" allowedMethods="GET"/>
+		<http:listener doc:name="Listener" doc:id="2b0fb8cf-c68c-4531-8ef8-3f60b8596d7f" config-ref="HTTP_Listener_config" path="/employee" allowedMethods="GET">
+			<http:error-response statusCode="#[vars.statusCode]" reasonPhrase="#[vars.reasonPhrase]">
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
 		<set-variable value='#[attributes.queryParams.EmpId default ""]' doc:name="Set Variable" doc:id="207e874b-3a8c-45b5-9f46-5eaaa801fe3b" variableName="EmployeeIdVar"/>
 		<db:select doc:name="Select" doc:id="3db3bc09-e8c8-456a-baf5-fa94913cceb7" config-ref="Database_Config">
 					<db:sql>SELECT * FROM employee WHERE EmpId= :EmpId</db:sql>
@@ -38,12 +42,38 @@ payload]]></ee:set-payload>
 'EmpId': vars.EmployeeIdVar
 }]]]></db:input-parameters>
 				</db:select>
-		<ee:transform doc:name="Transform Message" doc:id="86c18323-1a08-4af8-805e-5e4196bd12c4" >
-			<ee:message >
+		<choice doc:name="Choice" doc:id="06860e6f-1f24-44d9-9b41-e57e060ffdc3" >
+			<when expression="#[payload[0] != null]">
+				<ee:transform doc:name="Transform Message" doc:id="86c18323-1a08-4af8-805e-5e4196bd12c4">
+			<ee:message>
 				<ee:set-payload resource="SelectByID.dwl" />
 				<ee:set-attributes resource="SelectByID.dwl" />
 			</ee:message>
 		</ee:transform>
+			</when>
+			<otherwise >
+				<raise-error doc:name="Raise error" doc:id="7061f4be-44b1-4864-9b60-186fdae8462f" type="EMP:EMPLOYEE_NOT_FOUND" description="Employee data not found "/>
+			</otherwise>
+		</choice>
+		<error-handler>
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="20e5a67c-f417-4e32-b434-4c62b0607c90" type="EMP:EMPLOYEE_NOT_FOUND">
+				<ee:transform doc:name="Transform Message" doc:id="7cad6ba9-fc3d-45fa-b622-7132f9233f74">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"status": 401,
+	"message":"Employee data not found for this ID"
+}]]></ee:set-payload>
+					</ee:message>
+					<ee:variables>
+						<ee:set-variable variableName="StatusCode"><![CDATA[401]]></ee:set-variable>
+						<ee:set-variable variableName="reasonPhrase"><![CDATA["Employee Not Found"]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
 	</flow>
 	<flow name="EmployeeSelectByEmailFlow" doc:id="fd63d68a-30c8-4c2a-8374-c6560aed9f98" >
 		<http:listener doc:name="Listener" doc:id="80539cf2-333c-4d3c-9efa-f0a97fa0d43a" config-ref="HTTP_Listener_config" path="/EmployeesByEmail" allowedMethods="GET"/>

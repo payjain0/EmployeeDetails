@@ -21,15 +21,6 @@ type employee_json = {|
       </types:output-event>
     </types:processor-declaration>
   </types:enrichment>
-  <types:enrichment select="#d94dfc48-c881-4e40-93b1-d561be22c4fc">
-    <types:processor-declaration>
-      <types:output-event>
-        <types:message>
-          <types:payload type="employee_json"/>
-        </types:message>
-      </types:output-event>
-    </types:processor-declaration>
-  </types:enrichment>
   <types:enrichment select="#e95d88ee-177d-4c4c-86c3-70ee4b33902d">
     <types:processor-declaration>
       <types:output-event>
